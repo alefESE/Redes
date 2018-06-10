@@ -3,8 +3,12 @@ package redes;
 import java.net.*;
 import java.io.*;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class ProxyCache {
+    /** Hash de cache (HOST, caches) */
+    private static HashMap<String, HttpResponse> cache = new HashMap();
     /** Port for the proxy */
     private static int port;
     /** Socket for client connections */
@@ -14,7 +18,7 @@ public class ProxyCache {
     public static void init(int p) {
 	port = p;
 	try {
-	    socket = new ServerSocket(p);
+	    socket = new ServerSocket(port);
 	} catch (IOException e) {
 	    System.out.println("Error creating socket: " + e);
 	    System.exit(-1);
@@ -39,41 +43,56 @@ public class ProxyCache {
 	    System.out.println("Error reading request from client: " + e);
 	    return;
 	}
-	/* Send request to server */
-	try {
-	    /* Open socket and write request to socket */
-	    server = new Socket(InetAddress.getByName(request.getHost())
-                    , request.getPort());//preenchido
-	    DataOutputStream toServer = 
-                    new DataOutputStream(server.getOutputStream());//preenchido
-	    toServer.write(request.toString().getBytes());//preechido
-	} catch (UnknownHostException e) {
-	    System.out.println("Unknown host: " + request.getHost());
-	    System.out.println(e);
-	    return;
-	} catch (IOException e) {
-	    System.out.println("Error writing request to server: " + e);
-	    return;
-	}
-	/* Read response and forward it to client */
-	try {
-	    DataInputStream fromServer = 
-                    new DataInputStream(server.getInputStream());//preenchido
-	    response = new HttpResponse(fromServer);
-	    DataOutputStream toClient = 
-                    new DataOutputStream(client.getOutputStream());//prenchido
-            //primeiro headers
-	    toClient.write(response.toString().getBytes());//preenchido
-            //depois corpo(se houver)
-            toClient.write(response.body);//preenchido
-	    /* Write response to client. First headers, then body */
-	    client.close();
-	    server.close();
-	    /* Insert object into the cache */
-	    /* Fill in (optional exercise only) */
-	} catch (IOException e) {
-	    System.out.println("Error writing response to client: " + e);
-	}
+        /* Cache hit! */
+        if((response = cache.get(request.URI)) != null) {
+            System.out.println("Cache Hit!");
+            try {
+                DataOutputStream toClient =
+                        new DataOutputStream(client.getOutputStream());
+                toClient.write(response.toString().getBytes());
+                toClient.write(response.body);
+                client.close();
+            } catch (IOException ex) {
+                System.out.println("Error writing response to client: " + ex);
+            }
+        } else { /* Cache miss! */
+            System.out.println("Cache miss!");
+            /* Send request to server */
+            try {
+                /* Open socket and write request to socket */
+                server = new Socket(InetAddress.getByName(request.getHost())
+                        , request.getPort());//preenchido
+                DataOutputStream toServer = 
+                        new DataOutputStream(server.getOutputStream());//preenchido
+                toServer.write(request.toString().getBytes());//preechido
+            } catch (UnknownHostException e) {
+                System.out.println("Unknown host: " + request.getHost());
+                System.out.println(e);
+                return;
+            } catch (IOException e) {
+                System.out.println("Error writing request to server: " + e);
+                return;
+            }
+            /* Read response and forward it to client */
+            try {
+                DataInputStream fromServer = 
+                        new DataInputStream(server.getInputStream());//preenchido
+                response = new HttpResponse(fromServer);
+                DataOutputStream toClient = 
+                        new DataOutputStream(client.getOutputStream());//prenchido
+                //primeiro headers
+                toClient.write(response.toString().getBytes());//preenchido
+                //depois corpo(se houver)
+                toClient.write(response.body);//preenchido
+                /* Write response to client. First headers, then body */
+                client.close();
+                server.close();
+                /* Insert object into the cache */
+                cache.put(request.URI, response);
+            } catch (IOException e) {
+                System.out.println("Error writing response to client: " + e);
+            }
+        }
     }
 
 

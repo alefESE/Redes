@@ -8,11 +8,13 @@ public class HttpRequest {
     /** Help variables */
     final static String CRLF = "\r\n";
     final static int HTTP_PORT = 80;
+    final static int MAX_OBJECT_SIZE = 100000;
     /** Store the request parameters */
     String method;
     String URI;
     String version;
     String headers = "";
+    byte[] body = new byte[MAX_OBJECT_SIZE];
     /** Server and port */
     private String host;
     private int port;
@@ -29,12 +31,12 @@ public class HttpRequest {
 	String[] tmp = firstLine.split(" ");// 'Metodo URI HTTP/versao'
 	method = tmp[0];//preenchido
 	URI = tmp[1];//preenchido
-	version = tmp[2].substring(tmp[2].indexOf("/"));//preenchido
+	version = tmp[2];//preenchido
 
 	System.out.println("URI is: " + URI);
 
 	if (!method.equals("GET")) {//vai ter POST tbm
-	    System.out.println("Error: Method not GET");
+	    System.out.println("Method: "+ method);
 	}
 	try {
 	    String line = from.readLine();
