@@ -34,33 +34,48 @@ public class HttpRequest {
 	version = tmp[2];//preenchido
 
 	System.out.println("URI is: " + URI);
-
-	if (!method.equals("GET")) {//vai ter POST tbm
-	    System.out.println("Method: "+ method);
-	}
-	try {
-	    String line = from.readLine();
-	    while (line.length() != 0) {
-		headers += line + CRLF;
-		/* We need to find host header to know which server to
-		 * contact in case the request URI is not complete. */
-		if (line.startsWith("Host:")) {
-		    tmp = line.split(" ");
-		    if (tmp[1].indexOf(':') > 0) {
-			String[] tmp2 = tmp[1].split(":");
-			host = tmp2[0];
-			port = Integer.parseInt(tmp2[1]);
-		    } else {
-			host = tmp[1];
-			port = HTTP_PORT;
-		    }
-		}
-		line = from.readLine();
-	    }
-	} catch (IOException e) {
-	    System.out.println("Error reading from socket: " + e);
-	    return;
-	}
+        
+        System.out.println("Method: "+ method);
+        try {
+            String line = from.readLine();
+            while (line.length() != 0) {
+                headers += line + CRLF;
+                /* We need to find host header to know which server to
+                 * contact in case the request URI is not complete. */
+                if (line.startsWith("Host:")) {
+                    tmp = line.split(" ");
+                    if (tmp[1].indexOf(':') > 0) {
+                        String[] tmp2 = tmp[1].split(":");
+                        host = tmp2[0];
+                        port = Integer.parseInt(tmp2[1]);
+                    } else {
+                        host = tmp[1];
+                        port = HTTP_PORT;
+                    }
+                }
+                /* Post text/plain
+                 * Handle apenas os POST de textos simples */
+                if(line.startsWith("Content-Type:") || 
+                        line.startsWith("Content-type")){
+                    line = from.readLine();
+                    if(line.equals("Content-Length:")) {
+                        int length = Integer.parseInt(
+                                line.substring(line.indexOf(':')));
+                        int bytesRead = 0;
+                        line = from.readLine();
+                        while(bytesRead < length){
+                                for(int i = 0; i < line.length(); i++)
+                                body[i+bytesRead] = line.getBytes()[i];
+                            bytesRead += line.length();
+                            from.readLine();
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error reading from socket: " + e);
+            return;
+        }
 	System.out.println("Host to contact is: " + host + " at port " + port);
     }
 

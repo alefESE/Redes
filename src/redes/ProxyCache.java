@@ -65,6 +65,8 @@ public class ProxyCache {
                 DataOutputStream toServer = 
                         new DataOutputStream(server.getOutputStream());//preenchido
                 toServer.write(request.toString().getBytes());//preechido
+                if(request.method.equals("POST"))//se for post tem corpo
+                    toServer.write(request.body);
             } catch (UnknownHostException e) {
                 System.out.println("Unknown host: " + request.getHost());
                 System.out.println(e);
